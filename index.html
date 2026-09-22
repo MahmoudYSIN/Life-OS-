@@ -384,9 +384,6 @@
       const pendingReceivablesTotal = receivables
         .filter(r => r.status === 'Pending')
         .reduce((sum, r) => sum + (r.amount || 0), 0);
-      const totalPendingEarnings = workTasks
-        .filter(t => t.paymentStatus === 'Pending')
-        .reduce((sum, t) => sum + (t.amount || 0), 0);
       const netWorth = (accounts.cash || 0) + (accounts.bank || 0) + (accounts.creditCard || 0);
 
       return (
@@ -747,10 +744,15 @@
       const [isEditAccountsOpen, setIsEditAccountsOpen] = useState(false);
       const [tempAccounts, setTempAccounts] = useState({ ...accounts });
 
-      // State for adding new Receivable directly
+      // State for adding new Receivable
       const [newRecSource, setNewRecSource] = useState('');
       const [newRecAmount, setNewRecAmount] = useState('');
       const [newRecDate, setNewRecDate] = useState('');
+
+      // State for adding new Bill directly
+      const [newBillName, setNewBillName] = useState('');
+      const [newBillAmount, setNewBillAmount] = useState('');
+      const [newBillDueDay, setNewBillDueDay] = useState('');
 
       // Modal states
       const [pendingPaidBillId, setPendingPaidBillId] = useState(null);
@@ -786,6 +788,26 @@
         setNewRecDate('');
       };
 
+      // Handle Add Bill Directly
+      const handleAddBill = (e) => {
+        e.preventDefault();
+        if (!newBillName.trim() || !newBillAmount) return;
+        setBills([
+          ...bills,
+          {
+            id: 'b-' + Date.now(),
+            name: newBillName,
+            amount: parseFloat(newBillAmount) || 0,
+            dueDay: parseInt(newBillDueDay) || 1,
+            status: 'Unpaid',
+            paidFrom: null
+          }
+        ]);
+        setNewBillName('');
+        setNewBillAmount('');
+        setNewBillDueDay('');
+      };
+
       // Handle Bill Status Toggle
       const initiateToggleBillStatus = (bill) => {
         if (bill.status === 'Unpaid') {
@@ -818,7 +840,6 @@
         if (rec.status === 'Pending') {
           setPendingReceiveId(rec.id);
         } else {
-          // Revert back to Pending: deduct the amount from deposit account
           const receivedTo = rec.receivedTo || 'bank';
           setAccounts(prev => ({
             ...prev,
@@ -832,7 +853,6 @@
         const rec = receivables.find(r => r.id === pendingReceiveId);
         if (!rec) return;
 
-        // Deposit amount to selected account
         setAccounts(prev => ({
           ...prev,
           [accountType]: (prev[accountType] || 0) + rec.amount
@@ -1024,6 +1044,36 @@
                 Total Monthly: <strong className="text-slate-200">AED {bills.reduce((s, b) => s + b.amount, 0).toLocaleString()}</strong>
               </span>
             </div>
+
+            {/* Direct Add Bill Form */}
+            <form onSubmit={handleAddBill} className="flex flex-wrap gap-2 pt-1">
+              <input
+                type="text"
+                placeholder="Expense / Bill name..."
+                value={newBillName}
+                onChange={(e) => setNewBillName(e.target.value)}
+                className="flex-1 min-w-[200px] bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-slate-200 outline-none focus:border-brand-500"
+              />
+              <input
+                type="number"
+                placeholder="Amount (AED)..."
+                value={newBillAmount}
+                onChange={(e) => setNewBillAmount(e.target.value)}
+                className="w-36 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 outline-none focus:border-brand-500"
+              />
+              <input
+                type="number"
+                min="1"
+                max="31"
+                placeholder="Due Day (1-31)..."
+                value={newBillDueDay}
+                onChange={(e) => setNewBillDueDay(e.target.value)}
+                className="w-36 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 outline-none focus:border-brand-500"
+              />
+              <button type="submit" className="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl text-sm font-medium">
+                + Add Bill
+              </button>
+            </form>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm text-slate-300">
