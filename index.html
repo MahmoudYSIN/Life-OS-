@@ -72,14 +72,14 @@
     // Default Mock Initial Data
     const defaultData = {
       accounts: {
-        cash: 1200,
-        bank: 5400,
-        creditCard: 2500
+        cash: 4400,
+        bank: 19800,
+        creditCard: 9200
       },
       workTasks: [
-        { id: '1', title: 'Real Estate Ad Campaign Meta Setup', client: 'Citiway RE', deadline: '2026-09-28', tag: 'Work', amount: 850, paymentStatus: 'Paid', status: 'In Progress' },
-        { id: '2', title: 'Aesthetic Studio Landing Page UX', client: 'Rana Glow Studio', deadline: '2026-09-30', tag: 'Freelance', amount: 1200, paymentStatus: 'Pending', status: 'To Do' },
-        { id: '3', title: 'Zoho CRM Lead Automation Pipeline', client: 'Citiway RE', deadline: '2026-10-05', tag: 'Work', amount: 600, paymentStatus: 'Pending', status: 'Waiting' }
+        { id: '1', title: 'Real Estate Ad Campaign Meta Setup', client: 'Citiway RE', deadline: '2026-09-28', tag: 'Work', amount: 3100, paymentStatus: 'Paid', status: 'In Progress' },
+        { id: '2', title: 'Aesthetic Studio Landing Page UX', client: 'Rana Glow Studio', deadline: '2026-09-30', tag: 'Freelance', amount: 4400, paymentStatus: 'Pending', status: 'To Do' },
+        { id: '3', title: 'Zoho CRM Lead Automation Pipeline', client: 'Citiway RE', deadline: '2026-10-05', tag: 'Work', amount: 2200, paymentStatus: 'Pending', status: 'Waiting' }
       ],
       personalProjects: [
         {
@@ -97,10 +97,14 @@
         { id: 'id-2', title: 'Personal Brand Portfolio Website Automation', tag: 'Marketing', date: '2026-09-20' }
       ],
       bills: [
-        { id: 'b1', name: 'Apartment Rent', amount: 1200, dueDay: 1, status: 'Paid', paidFrom: 'bank' },
-        { id: 'b2', name: 'Electricity & Water Utility', amount: 110, dueDay: 25, status: 'Paid', paidFrom: 'creditCard' },
-        { id: 'b3', name: 'High-Speed Fiber Internet', amount: 45, dueDay: 28, status: 'Paid', paidFrom: 'bank' },
-        { id: 'b4', name: 'Canada Visa & Medical Processing', amount: 250, dueDay: 30, status: 'Paid', paidFrom: 'creditCard' }
+        { id: 'b1', name: 'Apartment Rent', amount: 4400, dueDay: 1, status: 'Paid', paidFrom: 'bank' },
+        { id: 'b2', name: 'Electricity & Water Utility', amount: 400, dueDay: 25, status: 'Paid', paidFrom: 'creditCard' },
+        { id: 'b3', name: 'High-Speed Fiber Internet', amount: 380, dueDay: 28, status: 'Paid', paidFrom: 'bank' },
+        { id: 'b4', name: 'Canada Visa & Medical Processing', amount: 920, dueDay: 30, status: 'Paid', paidFrom: 'creditCard' }
+      ],
+      receivables: [
+        { id: 'r1', source: 'Citiway RE Unpaid Commission', amount: 5500, dueDate: '2026-09-30', status: 'Pending', receivedTo: null },
+        { id: 'r2', source: 'Rana Glow Studio Project Milestone', amount: 3200, dueDate: '2026-10-05', status: 'Pending', receivedTo: null }
       ],
       shoppingItems: [
         { id: 's1', name: 'Specialty Whole Bean Coffee', category: 'Supermarket', done: true },
@@ -151,6 +155,11 @@
         return saved ? JSON.parse(saved) : defaultData.bills;
       });
 
+      const [receivables, setReceivables] = useState(() => {
+        const saved = localStorage.getItem('life_os_receivables');
+        return saved ? JSON.parse(saved) : defaultData.receivables;
+      });
+
       const [shoppingItems, setShoppingItems] = useState(() => {
         const saved = localStorage.getItem('life_os_shopping');
         return saved ? JSON.parse(saved) : defaultData.shoppingItems;
@@ -175,6 +184,7 @@
       useEffect(() => { localStorage.setItem('life_os_personal_projects', JSON.stringify(personalProjects)); }, [personalProjects]);
       useEffect(() => { localStorage.setItem('life_os_ideas', JSON.stringify(ideas)); }, [ideas]);
       useEffect(() => { localStorage.setItem('life_os_bills', JSON.stringify(bills)); }, [bills]);
+      useEffect(() => { localStorage.setItem('life_os_receivables', JSON.stringify(receivables)); }, [receivables]);
       useEffect(() => { localStorage.setItem('life_os_shopping', JSON.stringify(shoppingItems)); }, [shoppingItems]);
       useEffect(() => { localStorage.setItem('life_os_errands', JSON.stringify(errands)); }, [errands]);
       useEffect(() => { localStorage.setItem('life_os_settings', JSON.stringify(settings)); }, [settings]);
@@ -273,6 +283,7 @@
                 <DashboardView 
                   workTasks={workTasks} 
                   bills={bills} 
+                  receivables={receivables}
                   errands={errands}
                   accounts={accounts}
                   setActiveTab={setActiveTab} 
@@ -296,6 +307,8 @@
                 <HomeFinanceView 
                   bills={bills} 
                   setBills={setBills}
+                  receivables={receivables}
+                  setReceivables={setReceivables}
                   shoppingItems={shoppingItems}
                   setShoppingItems={setShoppingItems}
                   accounts={accounts}
@@ -357,6 +370,7 @@
               onClose={() => setIsQuickAddOpen(false)}
               setWorkTasks={setWorkTasks}
               setBills={setBills}
+              setReceivables={setReceivables}
               setErrands={setErrands}
             />
           )}
@@ -365,8 +379,11 @@
     }
 
     // 1. DASHBOARD VIEW
-    function DashboardView({ workTasks, bills, errands, accounts, setActiveTab }) {
+    function DashboardView({ workTasks, bills, receivables, errands, accounts, setActiveTab }) {
       const urgentBills = bills.filter(b => b.status === 'Unpaid');
+      const pendingReceivablesTotal = receivables
+        .filter(r => r.status === 'Pending')
+        .reduce((sum, r) => sum + (r.amount || 0), 0);
       const totalPendingEarnings = workTasks
         .filter(t => t.paymentStatus === 'Pending')
         .reduce((sum, t) => sum + (t.amount || 0), 0);
@@ -379,7 +396,7 @@
             <div className="relative z-10 space-y-2">
               <h2 className="text-2xl font-bold text-white">Welcome back, Mahmoud</h2>
               <p className="text-slate-400 text-sm max-w-xl">
-                Here is your unified life overview. You have {urgentBills.length} unpaid bill(s) pending and ${totalPendingEarnings} in pending client payouts.
+                Here is your unified life overview. You have {urgentBills.length} unpaid bill(s) and AED {pendingReceivablesTotal.toLocaleString()} in pending receivables due to you.
               </p>
             </div>
           </div>
@@ -391,8 +408,17 @@
                 <span>Total Liquidity / Net</span>
                 <i data-lucide="wallet" className="w-4 h-4 text-brand-400"></i>
               </div>
-              <p className="text-2xl font-bold text-white">${netWorth.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-white">AED {netWorth.toLocaleString()}</p>
               <p className="text-xs text-slate-400">Combined Cash + Bank + Cards</p>
+            </div>
+
+            <div className="bg-[#0d131f] border border-slate-800 rounded-xl p-4 space-y-2">
+              <div className="flex items-center justify-between text-slate-400 text-xs">
+                <span>Pending Receivables</span>
+                <i data-lucide="arrow-down-left" className="w-4 h-4 text-emerald-400"></i>
+              </div>
+              <p className="text-2xl font-bold text-emerald-400">AED {pendingReceivablesTotal.toLocaleString()}</p>
+              <p className="text-xs text-slate-400">Unpaid Salaries & Invoices</p>
             </div>
 
             <div className="bg-[#0d131f] border border-slate-800 rounded-xl p-4 space-y-2">
@@ -402,15 +428,6 @@
               </div>
               <p className="text-2xl font-bold text-amber-400">{urgentBills.length}</p>
               <p className="text-xs text-slate-400">Requires attention</p>
-            </div>
-
-            <div className="bg-[#0d131f] border border-slate-800 rounded-xl p-4 space-y-2">
-              <div className="flex items-center justify-between text-slate-400 text-xs">
-                <span>Pending Receivables</span>
-                <i data-lucide="arrow-down-left" className="w-4 h-4 text-emerald-400"></i>
-              </div>
-              <p className="text-2xl font-bold text-emerald-400">${totalPendingEarnings.toLocaleString()}</p>
-              <p className="text-xs text-slate-400">From freelance & client projects</p>
             </div>
 
             <div className="bg-[#0d131f] border border-slate-800 rounded-xl p-4 space-y-2">
@@ -444,7 +461,7 @@
                       <span className="text-xs text-slate-400">Due Day {bill.dueDay} of month</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="font-bold text-sm text-slate-100">${bill.amount}</span>
+                      <span className="font-bold text-sm text-slate-100">AED {bill.amount}</span>
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
                         bill.status === 'Paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                       }`}>
@@ -563,7 +580,7 @@
 
                         <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 text-xs">
                           <span className="text-slate-400">Due: {task.deadline}</span>
-                          <span className="font-bold text-slate-200">${task.amount}</span>
+                          <span className="font-bold text-slate-200">AED {task.amount}</span>
                         </div>
 
                         <div className="flex items-center justify-between gap-2 pt-1">
@@ -723,31 +740,57 @@
       );
     }
 
-    // 4. HOME & FINANCE VIEW (With Accounts, Delete Bills & Deduction Logic)
-    function HomeFinanceView({ bills, setBills, shoppingItems, setShoppingItems, accounts, setAccounts }) {
+    // 4. HOME & FINANCE VIEW
+    function HomeFinanceView({ bills, setBills, receivables, setReceivables, shoppingItems, setShoppingItems, accounts, setAccounts }) {
       const [newShopItem, setNewShopItem] = useState('');
       const [shopCategory, setShopCategory] = useState('Supermarket');
       const [isEditAccountsOpen, setIsEditAccountsOpen] = useState(false);
       const [tempAccounts, setTempAccounts] = useState({ ...accounts });
 
-      // Modal state for selecting payment source when marking a bill as Paid
-      const [pendingPaidBillId, setPendingPaidBillId] = useState(null);
+      // State for adding new Receivable directly
+      const [newRecSource, setNewRecSource] = useState('');
+      const [newRecAmount, setNewRecAmount] = useState('');
+      const [newRecDate, setNewRecDate] = useState('');
 
-      // Total Liquidity
-      const totalBalance = (accounts.cash || 0) + (accounts.bank || 0) + (accounts.creditCard || 0);
+      // Modal states
+      const [pendingPaidBillId, setPendingPaidBillId] = useState(null);
+      const [pendingReceiveId, setPendingReceiveId] = useState(null);
 
       // Handle Bill Delete
       const handleDeleteBill = (id) => {
         setBills(bills.filter(b => b.id !== id));
       };
 
+      // Handle Receivable Delete
+      const handleDeleteReceivable = (id) => {
+        setReceivables(receivables.filter(r => r.id !== id));
+      };
+
+      // Handle Add Receivable
+      const handleAddReceivable = (e) => {
+        e.preventDefault();
+        if (!newRecSource.trim() || !newRecAmount) return;
+        setReceivables([
+          ...receivables,
+          {
+            id: 'r-' + Date.now(),
+            source: newRecSource,
+            amount: parseFloat(newRecAmount) || 0,
+            dueDate: newRecDate || 'Pending',
+            status: 'Pending',
+            receivedTo: null
+          }
+        ]);
+        setNewRecSource('');
+        setNewRecAmount('');
+        setNewRecDate('');
+      };
+
       // Handle Bill Status Toggle
       const initiateToggleBillStatus = (bill) => {
         if (bill.status === 'Unpaid') {
-          // Open selection modal to pick Cash, Bank, or Credit Card
           setPendingPaidBillId(bill.id);
         } else {
-          // If toggling back to Unpaid, refund the amount to the previously paid account
           const paidFrom = bill.paidFrom || 'bank';
           setAccounts(prev => ({
             ...prev,
@@ -761,15 +804,42 @@
         const bill = bills.find(b => b.id === pendingPaidBillId);
         if (!bill) return;
 
-        // Deduct from account balance
         setAccounts(prev => ({
           ...prev,
           [accountType]: (prev[accountType] || 0) - bill.amount
         }));
 
-        // Update bill status
         setBills(prev => prev.map(b => b.id === pendingPaidBillId ? { ...b, status: 'Paid', paidFrom: accountType } : b));
         setPendingPaidBillId(null);
+      };
+
+      // Handle Receivable Status Toggle
+      const initiateToggleReceivableStatus = (rec) => {
+        if (rec.status === 'Pending') {
+          setPendingReceiveId(rec.id);
+        } else {
+          // Revert back to Pending: deduct the amount from deposit account
+          const receivedTo = rec.receivedTo || 'bank';
+          setAccounts(prev => ({
+            ...prev,
+            [receivedTo]: Math.max(0, (prev[receivedTo] || 0) - rec.amount)
+          }));
+          setReceivables(prev => prev.map(r => r.id === rec.id ? { ...r, status: 'Pending', receivedTo: null } : r));
+        }
+      };
+
+      const confirmReceiveMoney = (accountType) => {
+        const rec = receivables.find(r => r.id === pendingReceiveId);
+        if (!rec) return;
+
+        // Deposit amount to selected account
+        setAccounts(prev => ({
+          ...prev,
+          [accountType]: (prev[accountType] || 0) + rec.amount
+        }));
+
+        setReceivables(prev => prev.map(r => r.id === pendingReceiveId ? { ...r, status: 'Received', receivedTo: accountType } : r));
+        setPendingReceiveId(null);
       };
 
       const handleSaveAccounts = (e) => {
@@ -797,7 +867,7 @@
       };
 
       const downloadIcs = (bill) => {
-        const icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:Pay ${bill.name}\nDESCRIPTION:Bill Payment of $${bill.amount}\nSTATUS:CONFIRMED\nEND:VEVENT\nEND:VCALENDAR`;
+        const icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:Pay ${bill.name}\nDESCRIPTION:Bill Payment of AED ${bill.amount}\nSTATUS:CONFIRMED\nEND:VEVENT\nEND:VCALENDAR`;
         const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -811,7 +881,7 @@
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-bold text-white">Home & Financial Center</h2>
-              <p className="text-xs text-slate-400">Track cash, bank, credit card balances, bills, and household checklists</p>
+              <p className="text-xs text-slate-400">Track cash, bank, credit card balances, receivables, bills, and household checklists</p>
             </div>
 
             <button
@@ -829,10 +899,10 @@
               <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
                 <span className="flex items-center gap-2">
                   <i data-lucide="banknote" className="w-4 h-4 text-emerald-400"></i>
-                  Cash Balance (رصيد الكاش)
+                  Cash Balance
                 </span>
               </div>
-              <p className="text-2xl font-bold text-emerald-400">${accounts.cash?.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-emerald-400">AED {accounts.cash?.toLocaleString()}</p>
               <span className="text-[11px] text-slate-500">Physical Cash</span>
             </div>
 
@@ -840,10 +910,10 @@
               <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
                 <span className="flex items-center gap-2">
                   <i data-lucide="building-2" className="w-4 h-4 text-blue-400"></i>
-                  Bank Account (الحساب البنكي)
+                  Bank Account
                 </span>
               </div>
-              <p className="text-2xl font-bold text-blue-400">${accounts.bank?.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-blue-400">AED {accounts.bank?.toLocaleString()}</p>
               <span className="text-[11px] text-slate-500">Checking / Savings</span>
             </div>
 
@@ -851,11 +921,98 @@
               <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
                 <span className="flex items-center gap-2">
                   <i data-lucide="credit-card" className="w-4 h-4 text-purple-400"></i>
-                  Credit Card (بطاقة الائتمان)
+                  Credit Card
                 </span>
               </div>
-              <p className="text-2xl font-bold text-purple-400">${accounts.creditCard?.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-purple-400">AED {accounts.creditCard?.toLocaleString()}</p>
               <span className="text-[11px] text-slate-500">Available Limit</span>
+            </div>
+          </div>
+
+          {/* Pending Receivables Table */}
+          <div className="bg-[#0d131f] border border-slate-800 rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <i data-lucide="arrow-down-left" className="w-5 h-5 text-emerald-400"></i>
+                <h3 className="font-bold text-white text-base">Pending Receivables & Incoming Dues</h3>
+              </div>
+              <span className="text-xs text-slate-400">
+                Total Pending: <strong className="text-emerald-400">AED {receivables.filter(r => r.status === 'Pending').reduce((s, r) => s + r.amount, 0).toLocaleString()}</strong>
+              </span>
+            </div>
+
+            <form onSubmit={handleAddReceivable} className="flex flex-wrap gap-2 pt-1">
+              <input
+                type="text"
+                placeholder="Source / Client / Salary name..."
+                value={newRecSource}
+                onChange={(e) => setNewRecSource(e.target.value)}
+                className="flex-1 min-w-[200px] bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-slate-200 outline-none focus:border-brand-500"
+              />
+              <input
+                type="number"
+                placeholder="Amount (AED)..."
+                value={newRecAmount}
+                onChange={(e) => setNewRecAmount(e.target.value)}
+                className="w-36 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 outline-none focus:border-brand-500"
+              />
+              <input
+                type="date"
+                value={newRecDate}
+                onChange={(e) => setNewRecDate(e.target.value)}
+                className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 outline-none"
+              />
+              <button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-medium">
+                + Add Receivable
+              </button>
+            </form>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-300">
+                <thead className="text-xs text-slate-400 bg-slate-900/80 uppercase tracking-wider border-b border-slate-800">
+                  <tr>
+                    <th className="px-4 py-3">Source / Client Name</th>
+                    <th className="px-4 py-3">Amount</th>
+                    <th className="px-4 py-3">Expected Date</th>
+                    <th className="px-4 py-3">Deposit Account</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {receivables.map(rec => (
+                    <tr key={rec.id} className="hover:bg-slate-900/40 transition-colors">
+                      <td className="px-4 py-3 font-medium text-slate-200">{rec.source}</td>
+                      <td className="px-4 py-3 font-bold text-emerald-400">AED {rec.amount?.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-slate-400">{rec.dueDate}</td>
+                      <td className="px-4 py-3 text-xs capitalize text-slate-400">
+                        {rec.receivedTo ? rec.receivedTo : '-'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => initiateToggleReceivableStatus(rec)}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 transition-all ${
+                            rec.status === 'Received' 
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                              : 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20'
+                          }`}
+                        >
+                          {rec.status} {rec.status === 'Received' ? '✓' : '⚡'}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => handleDeleteReceivable(rec.id)}
+                          className="text-slate-500 hover:text-rose-400 p-1.5 transition-colors rounded-lg hover:bg-slate-800"
+                          title="Delete Receivable"
+                        >
+                          <i data-lucide="trash-2" className="w-4 h-4"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -864,7 +1021,7 @@
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-bold text-white text-base">Monthly Bills & Recurring Obligations</h3>
               <span className="text-xs text-slate-400">
-                Total Monthly: <strong className="text-slate-200">${bills.reduce((s, b) => s + b.amount, 0)}</strong>
+                Total Monthly: <strong className="text-slate-200">AED {bills.reduce((s, b) => s + b.amount, 0).toLocaleString()}</strong>
               </span>
             </div>
 
@@ -885,7 +1042,7 @@
                   {bills.map(bill => (
                     <tr key={bill.id} className="hover:bg-slate-900/40 transition-colors">
                       <td className="px-4 py-3 font-medium text-slate-200">{bill.name}</td>
-                      <td className="px-4 py-3 font-bold text-brand-300">${bill.amount}</td>
+                      <td className="px-4 py-3 font-bold text-brand-300">AED {bill.amount}</td>
                       <td className="px-4 py-3 text-slate-400">Day {bill.dueDay}</td>
                       <td className="px-4 py-3 text-xs capitalize text-slate-400">
                         {bill.paidFrom ? bill.paidFrom : '-'}
@@ -974,6 +1131,71 @@
             </div>
           </div>
 
+          {/* Modal to Choose Account when receiving money */}
+          {pendingReceiveId && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-[#0d131f] border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-5">
+                <div className="space-y-1">
+                  <h3 className="text-lg font-bold text-white">Select Deposit Account</h3>
+                  <p className="text-xs text-slate-400">
+                    Which account received this payment? The amount will be added to its balance.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2.5">
+                  <button
+                    onClick={() => confirmReceiveMoney('cash')}
+                    className="flex items-center justify-between p-3.5 rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 text-left transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <i data-lucide="banknote" className="w-5 h-5 text-emerald-400"></i>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-200">Cash</p>
+                        <span className="text-xs text-slate-400">Balance: AED {accounts.cash}</span>
+                      </div>
+                    </div>
+                    <span className="text-xs text-emerald-400 font-medium">+ Deposit →</span>
+                  </button>
+
+                  <button
+                    onClick={() => confirmReceiveMoney('bank')}
+                    className="flex items-center justify-between p-3.5 rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 text-left transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <i data-lucide="building-2" className="w-5 h-5 text-blue-400"></i>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-200">Bank Account</p>
+                        <span className="text-xs text-slate-400">Balance: AED {accounts.bank}</span>
+                      </div>
+                    </div>
+                    <span className="text-xs text-emerald-400 font-medium">+ Deposit →</span>
+                  </button>
+
+                  <button
+                    onClick={() => confirmReceiveMoney('creditCard')}
+                    className="flex items-center justify-between p-3.5 rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 text-left transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <i data-lucide="credit-card" className="w-5 h-5 text-purple-400"></i>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-200">Credit Card</p>
+                        <span className="text-xs text-slate-400">Balance: AED {accounts.creditCard}</span>
+                      </div>
+                    </div>
+                    <span className="text-xs text-emerald-400 font-medium">+ Deposit →</span>
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setPendingReceiveId(null)}
+                  className="w-full text-center py-2 text-xs text-slate-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Modal to Choose Payment Account when paying a bill */}
           {pendingPaidBillId && (
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -993,8 +1215,8 @@
                     <div className="flex items-center gap-3">
                       <i data-lucide="banknote" className="w-5 h-5 text-emerald-400"></i>
                       <div>
-                        <p className="text-sm font-semibold text-slate-200">Cash (الكاش)</p>
-                        <span className="text-xs text-slate-400">Balance: ${accounts.cash}</span>
+                        <p className="text-sm font-semibold text-slate-200">Cash</p>
+                        <span className="text-xs text-slate-400">Balance: AED {accounts.cash}</span>
                       </div>
                     </div>
                     <span className="text-xs text-brand-400 font-medium">Pay →</span>
@@ -1007,8 +1229,8 @@
                     <div className="flex items-center gap-3">
                       <i data-lucide="building-2" className="w-5 h-5 text-blue-400"></i>
                       <div>
-                        <p className="text-sm font-semibold text-slate-200">Bank Account (البنك)</p>
-                        <span className="text-xs text-slate-400">Balance: ${accounts.bank}</span>
+                        <p className="text-sm font-semibold text-slate-200">Bank Account</p>
+                        <span className="text-xs text-slate-400">Balance: AED {accounts.bank}</span>
                       </div>
                     </div>
                     <span className="text-xs text-brand-400 font-medium">Pay →</span>
@@ -1021,8 +1243,8 @@
                     <div className="flex items-center gap-3">
                       <i data-lucide="credit-card" className="w-5 h-5 text-purple-400"></i>
                       <div>
-                        <p className="text-sm font-semibold text-slate-200">Credit Card (الكريدت كارد)</p>
-                        <span className="text-xs text-slate-400">Balance: ${accounts.creditCard}</span>
+                        <p className="text-sm font-semibold text-slate-200">Credit Card</p>
+                        <span className="text-xs text-slate-400">Balance: AED {accounts.creditCard}</span>
                       </div>
                     </div>
                     <span className="text-xs text-brand-400 font-medium">Pay →</span>
@@ -1047,7 +1269,7 @@
 
                 <form onSubmit={handleSaveAccounts} className="space-y-3">
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Cash Balance ($)</label>
+                    <label className="text-xs text-slate-400 block mb-1">Cash Balance (AED)</label>
                     <input
                       type="number"
                       value={tempAccounts.cash}
@@ -1057,7 +1279,7 @@
                   </div>
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Bank Balance ($)</label>
+                    <label className="text-xs text-slate-400 block mb-1">Bank Balance (AED)</label>
                     <input
                       type="number"
                       value={tempAccounts.bank}
@@ -1067,7 +1289,7 @@
                   </div>
 
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Credit Card Balance ($)</label>
+                    <label className="text-xs text-slate-400 block mb-1">Credit Card Balance (AED)</label>
                     <input
                       type="number"
                       value={tempAccounts.creditCard}
@@ -1209,10 +1431,8 @@
         setLoading(true);
 
         try {
-          // Gemini Flash API Call
           const apiKey = settings.geminiApiKey || '';
           if (!apiKey) {
-            // Simulated AI Response if no key provided
             setTimeout(() => {
               setMessages(prev => [...prev, { 
                 role: 'agent', 
@@ -1229,7 +1449,7 @@
             body: JSON.stringify({
               contents: [{
                 parts: [{
-                  text: `You are Mahmoud's Life OS Assistant. Help him manage tasks, bills, and schedules efficiently. Current user query: "${userMsg}"`
+                  text: `You are Mahmoud's Life OS Assistant. Help him manage tasks, bills, receivables, and schedules efficiently. Current user query: "${userMsg}"`
                 }]
               }]
             })
@@ -1361,7 +1581,7 @@
     }
 
     // QUICK ADD MODAL
-    function QuickAddModal({ onClose, setWorkTasks, setBills, setErrands }) {
+    function QuickAddModal({ onClose, setWorkTasks, setBills, setReceivables, setErrands }) {
       const [type, setType] = useState('work');
       const [title, setTitle] = useState('');
       const [amount, setAmount] = useState('');
@@ -1372,12 +1592,17 @@
 
         if (type === 'work') {
           setWorkTasks(prev => [
-            { id: 'w-' + Date.now(), title, client: 'Direct Client', deadline: '2026-10-01', tag: 'Freelance', amount: Number(amount) || 500, paymentStatus: 'Pending', status: 'To Do' },
+            { id: 'w-' + Date.now(), title, client: 'Direct Client', deadline: '2026-10-01', tag: 'Freelance', amount: Number(amount) || 1500, paymentStatus: 'Pending', status: 'To Do' },
+            ...prev
+          ]);
+        } else if (type === 'receivable') {
+          setReceivables(prev => [
+            { id: 'r-' + Date.now(), source: title, amount: Number(amount) || 1000, dueDate: 'Pending', status: 'Pending', receivedTo: null },
             ...prev
           ]);
         } else if (type === 'bill') {
           setBills(prev => [
-            { id: 'b-' + Date.now(), name: title, amount: Number(amount) || 100, dueDay: 15, status: 'Unpaid' },
+            { id: 'b-' + Date.now(), name: title, amount: Number(amount) || 500, dueDay: 15, status: 'Unpaid' },
             ...prev
           ]);
         } else {
@@ -1394,8 +1619,8 @@
           <div className="bg-[#0d131f] border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4">
             <h3 className="text-lg font-bold text-white">+ Quick Add Item</h3>
 
-            <div className="flex gap-2 p-1 bg-slate-900 rounded-xl border border-slate-800">
-              {['work', 'bill', 'errand'].map(t => (
+            <div className="flex gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800">
+              {['work', 'receivable', 'bill', 'errand'].map(t => (
                 <button
                   key={t}
                   type="button"
@@ -1421,7 +1646,7 @@
               {type !== 'errand' && (
                 <input
                   type="number"
-                  placeholder="Amount ($)..."
+                  placeholder="Amount (AED)..."
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 outline-none"
